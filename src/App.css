@@ -283,6 +283,3 @@ html, body {
   transition: filter 1s ease; 
 }
 
-/* Tambahkan di baris paling bawah App.css */
-.navbar-height { height: 80px; } /* Kunci tinggi navbar */
-.dropdown-position { top: calc(100% + 12px); }

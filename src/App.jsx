@@ -48,6 +48,8 @@ export default function App() {
     setIsLoading(true);
     
     try {
+      // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN URL HOSTINGER-MU
+      // Contoh: fetch('https://api-musichealt.xgrow.studio/api/analyze', { ...
       const response = await fetch('http://localhost:5000/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

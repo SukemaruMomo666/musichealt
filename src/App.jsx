@@ -50,7 +50,7 @@ export default function App() {
     try {
       // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN URL HOSTINGER-MU
       // Contoh: fetch('https://api-musichealt.xgrow.studio/api/analyze', { ...
-      const response = await fetch('https://https://try.xgrow.studio/api/analyze', {
+      const response = await fetch('https://try.xgrow.studio/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ moodText })

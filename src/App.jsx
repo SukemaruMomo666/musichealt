@@ -261,53 +261,73 @@ export default function App() {
         )}
       </AnimatePresence>
 
-{/* Top Navigation Bar - STRUKTUR PENGUNCI POSISI */}
+      {/* Video Background Dinamis (Ditambah ref & flag crossOrigin) */}
+{/* GANTI BLOK motion.video KAMU DENGAN INI: */}
+{/* GANTI BLOK INI (SEKITAR BARIS 243) */}
+<AnimatePresence mode="wait">
+  <motion.video 
+    key={currentVibe.id}
+    ref={bgVideoRef}
+    initial={{ opacity: 0 }} 
+    animate={{ opacity: 0.5 }} 
+    exit={{ opacity: 0 }} 
+    transition={{ duration: 1.2 }}
+    autoPlay={!currentVibe.isScrubbable} 
+    loop 
+    muted 
+    playsInline
+    preload="auto"
+    // INI YANG MEMBUAT EFEK VINTAGE JAZZ MUNCUL:
+    className={`fixed inset-0 w-full h-full object-cover z-[0] ${currentVibe.isVintage ? 'vibe-vintage-jazz' : ''}`}
+    src={currentVibe.video}
+  />
+</AnimatePresence>
+
+{/* Top Navigation Bar - FIX ANTI-BUG */}
 <header className="fixed top-0 left-0 w-full z-50 bg-transparent">
-  {/* Container max-w-7xl berfungsi sebagai jangkar utama */}
-  <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+  <div className="max-w-7xl mx-auto px-6 md:px-12 navbar-height flex items-center justify-between">
     
-    {/* Logo */}
+    {/* Logo: Kunci posisinya */}
     <div className="flex items-center gap-2 flex-none">
       <h1 className="text-2xl md:text-3xl text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', serif" }}>
         Velorah<sup className="text-[10px] ml-1">®</sup>
       </h1>
     </div>
 
-{/* Tengah: Vibe Selector Menu */}
-<div className="relative flex-none" ref={menuRef}>
-  <button 
-    onClick={() => setShowVibeMenu(!showVibeMenu)}
-    className="liquid-glass flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold text-white/90 border border-white/10 shadow-lg"
-  >
-    <Disc3 size={14} className={isPlaying ? "animate-spin" : ""} />
-    <span className="uppercase tracking-widest">{currentVibe.name}</span>
-  </button>
-
-  {/* Dropdown Menu - POSISI DIPERBAIKI */}
-  <AnimatePresence>
-    {showVibeMenu && (
-      <motion.div
-        initial={{ opacity: 0, y: 15, scale: 0.95 }} 
-        animate={{ opacity: 1, y: 0, scale: 1 }} 
-        exit={{ opacity: 0, y: 15, scale: 0.95 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        // 'top-full mt-4' memastikan posisi menu 16px di bawah navbar
-        // 'z-[9999]' memastikan menu paling atas
-        className="absolute top-full mt-4 right-0 w-[240px] p-2 rounded-2xl liquid-glass border border-white/10 grid grid-cols-1 gap-1 z-[9999] shadow-2xl"
+    {/* Tengah: Vibe Selector */}
+    <div className="relative flex-none" ref={menuRef}>
+      <motion.button
+        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+        onClick={() => setShowVibeMenu(!showVibeMenu)}
+        className="liquid-glass flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] sm:text-xs font-semibold text-white/90 cursor-pointer border border-white/10 shadow-lg"
       >
-        {Object.values(VIBE_CONFIG).map((vibe) => (
-          <button 
-            key={vibe.id}
-            onClick={() => handleVibeChange(vibe.id)}
-            className={`px-4 py-3 rounded-lg text-[10px] uppercase tracking-widest text-left transition-all ${currentVibe.id === vibe.id ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+        <Disc3 size={14} className={isPlaying ? "animate-spin-slow text-white" : "text-white/50"} />
+        <span className="uppercase tracking-widest">{currentVibe.name}</span>
+      </motion.button>
+
+      <AnimatePresence>
+        {showVibeMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+            animate={{ opacity: 1, y: 0, scale: 1 }} 
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            // Gunakan class dropdown-position dari CSS
+            className="absolute dropdown-position right-0 w-[240px] p-2 rounded-2xl liquid-glass border border-white/10 grid grid-cols-1 gap-1 z-[999] shadow-2xl"
           >
-            {vibe.name}
-          </button>
-        ))}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</div>
+            {Object.values(VIBE_CONFIG).map((vibe) => (
+              <button 
+                key={vibe.id}
+                onClick={() => handleVibeChange(vibe.id)}
+                className={`px-4 py-3 rounded-lg text-[10px] uppercase tracking-widest text-left transition-all ${currentVibe.id === vibe.id ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10'}`}
+              >
+                {vibe.name}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
 
     {/* Mute Button */}
     <motion.button
@@ -318,7 +338,6 @@ export default function App() {
     </motion.button>
   </div>
 </header>
-
 
       {/* Konten Utama Aplikasi */}
       <div className="relative z-10 w-full max-w-7xl flex flex-col justify-between px-6 md:px-12 h-full flex-grow pb-10 pt-32 min-h-screen">

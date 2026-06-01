@@ -1,6 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Sparkles, Music2, Globe, MessageCircle, MonitorPlay, Camera, Volume2, VolumeX, Loader2, ArrowLeft, Play } from 'lucide-react';
+import { Brain, Sparkles, Music2, Globe, MessageCircle, MonitorPlay, Camera, Volume2, VolumeX, Loader2, ArrowLeft, Headphones, ExternalLink, Radio } from 'lucide-react';
+
+// Daftar lagu Vibe Galau / Sadboy TikTok (Piano sedih, Lofi hujan, dll)
+const sadboyBackgroundTracks = [
+  "https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3", // Sad Lofi Piano Vibes
+  "https://cdn.pixabay.com/download/audio/2022/10/25/audio_2435a22839.mp3", // Melancholy Acoustic
+  "https://cdn.pixabay.com/download/audio/2021/09/06/audio_4749f78330.mp3"  // Rainy Sadboy Midnight
+];
 
 export default function App() {
   const [moodText, setMoodText] = useState('');
@@ -8,8 +15,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   
-  // State baru untuk menyimpan data asli dari Backend
   const [apiData, setApiData] = useState({ pesan: "", keyword: "", songs: [] });
+  
+  // Memilih satu lagu background galau secara acak saat web pertama dibuka
+  const [bgMusic] = useState(() => sadboyBackgroundTracks[Math.floor(Math.random() * sadboyBackgroundTracks.length)]);
   
   const audioRef = useRef(null);
 
@@ -22,14 +31,23 @@ export default function App() {
     setIsPlaying(!isPlaying);
   };
 
-  // Fungsi yang sudah disambungkan ke Backend Node.js
+  // Fungsi untuk membuka Spotify Mini Player (Embed) dalam window popup
+  const openSpotifyMiniPlayer = (songId) => {
+    if (!songId) return alert("ID lagu tidak ditemukan.");
+    const embedUrl = `https://open.spotify.com/embed/track/${songId}?utm_source=generator`;
+    window.open(
+      embedUrl,
+      'SpotifyMiniPlayer',
+      'width=400,height=450,scrollbars=no,resizable=no'
+    );
+  };
+
   const handleAnalyze = async () => {
     if (!moodText.trim()) return alert("Ceritain dulu perasaanmu sedikit ya!");
     
     setIsLoading(true);
     
     try {
-      // Menembak API lokal yang tadi kita buat
       const response = await fetch('http://localhost:5000/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,13 +58,12 @@ export default function App() {
 
       const data = await response.json();
       
-      // Simpan data dari server ke state React
       setApiData(data);
       setShowResult(true);
 
     } catch (error) {
       console.error(error);
-      alert("Waduh, server backend sepertinya belum nyala atau ada error!");
+      alert("Waduh, server backend sepertinya belum nyala atau ada error API!");
     } finally {
       setIsLoading(false);
     }
@@ -60,16 +77,15 @@ export default function App() {
   return (
     <main className="relative bg-gray-950 w-full min-h-[115vh] overflow-x-hidden flex flex-col items-center font-sans selection:bg-white/20 selection:text-white">
       
-      <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
+      {/* Audio Element Background menggunakan lagu Sadboy Acak */}
+      <audio ref={audioRef} src={bgMusic} loop />
 
-      {/* Background Video */}
       <video 
         autoPlay loop muted playsInline
         className="fixed inset-0 w-full h-full object-cover z-[0] opacity-50"
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260429_114316_1c7889ad-2885-410e-b493-98119fee0ddb.mp4"
       />
 
-      {/* Floating Ambient Music Controller */}
       <div className="fixed top-6 right-6 z-50">
         <motion.button
           whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={toggleMusic}
@@ -95,7 +111,6 @@ export default function App() {
           <AnimatePresence mode="wait">
             
             {!showResult ? (
-              // HALAMAN INPUT FORM
               <motion.div
                 key="input-form"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -110,7 +125,7 @@ export default function App() {
                     MusicHealt
                   </h1>
                   <p className="text-white/70 text-sm md:text-base">
-                    Ceritakan kondisimu hari ini. AI akan meracik rekomendasi musik yang tepat untukmu.
+                    Ceritakan kondisimu, genre favorit, atau nama band. AI akan meracik rekomendasi yang paling tepat untukmu.
                   </p>
                 </div>
 
@@ -118,7 +133,7 @@ export default function App() {
                   <textarea
                     disabled={isLoading}
                     className="w-full h-32 bg-transparent resize-none outline-none placeholder-white/40 text-lg text-white disabled:opacity-50"
-                    placeholder="Ketik di sini... (contoh: capek banget habis ngerjain tugas, butuh yang santai)"
+                    placeholder="Ketik di sini... (contoh: lagi pengen banget denger lagu rock yang bikin semangat naik, kayak Paramore gitu)"
                     value={moodText}
                     onChange={(e) => setMoodText(e.target.value)}
                     onFocus={() => { if(!isPlaying) toggleMusic(); }}
@@ -135,7 +150,7 @@ export default function App() {
                   {isLoading ? (
                     <>
                       <Loader2 size={20} className="animate-spin text-teal-400" />
-                      <span>AI Sedang Menganalisis Jiwamu...</span>
+                      <span>AI Sedang Menganalisis...</span>
                     </>
                   ) : (
                     <>
@@ -146,7 +161,6 @@ export default function App() {
                 </motion.button>
               </motion.div>
             ) : (
-              // HALAMAN HASIL REKOMENDASI DARI API
               <motion.div
                 key="result-screen"
                 initial={{ opacity: 0, y: 20 }}
@@ -175,42 +189,55 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* List Card Lagu Asli dari iTunes API */}
-                <div className="space-y-3 mt-2">
+                <div className="space-y-4 mt-2">
                   {apiData.songs.length > 0 ? apiData.songs.map((song, idx) => (
                     <motion.div 
                       key={idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.15 }}
-                      className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/20 rounded-xl transition-all group"
+                      className="flex flex-col p-4 bg-white/5 border border-white/5 hover:border-white/20 rounded-xl transition-all group gap-4"
                     >
-                      <div className="flex items-center gap-4">
-                        {/* Menampilkan Cover Album Asli */}
-                        <img 
-                          src={song.cover} 
-                          alt="Album Cover" 
-                          className="w-12 h-12 rounded-lg object-cover border border-white/10 group-hover:scale-105 transition-transform"
-                        />
-                        <div>
-                          <h4 className="font-semibold text-white text-base group-hover:text-teal-300 transition-colors line-clamp-1">{song.title}</h4>
-                          <p className="text-xs text-white/50 line-clamp-1">{song.artist}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <img 
+                            src={song.cover} 
+                            alt="Album Cover" 
+                            className="w-14 h-14 rounded-lg object-cover border border-white/10 shadow-lg group-hover:scale-105 transition-transform"
+                          />
+                          <div>
+                            <h4 className="font-semibold text-white text-lg leading-tight line-clamp-1 group-hover:text-teal-300 transition-colors">{song.title}</h4>
+                            <p className="text-sm text-white/60 line-clamp-1">{song.artist}</p>
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4">
-                        <div className="hidden sm:flex gap-1.5">
-                          <span className="text-[10px] px-2 py-0.5 bg-white/5 border border-white/10 text-white/60 rounded-md">
-                            {song.genre}
-                          </span>
-                        </div>
-                        {/* Tombol Play ini sekarang akan membuka link preview audio di tab baru */}
+                      {/* 3 Tombol Aksi Spotify */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-3 border-t border-white/5">
+                        
+                        {/* Tombol yang membuka Popup Mini Player */}
                         <button 
-                          onClick={() => window.open(song.previewUrl, "_blank")}
-                          title="Dengarkan Preview"
-                          className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal-500 hover:text-gray-950 transition-all cursor-pointer flex-shrink-0"
+                          onClick={() => openSpotifyMiniPlayer(song.id)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all text-[11px] sm:text-xs font-bold tracking-wide"
                         >
-                          <Play size={14} fill="currentColor" className="ml-0.5" />
+                          <Headphones size={16} />
+                          MINI PLAYER
+                        </button>
+                        
+                        <button 
+                          onClick={() => window.open(song.spotifyUrl, "_blank")}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1DB954]/20 text-[#1DB954] hover:bg-[#1DB954] hover:text-white transition-all text-[11px] sm:text-xs font-bold tracking-wide"
+                        >
+                          <ExternalLink size={16} />
+                          SPOTIFY
+                        </button>
+                        
+                        <button 
+                          onClick={() => window.open(`https://open.spotify.com/station/track/${song.id}`, "_blank")}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-gray-950 transition-all text-[11px] sm:text-xs font-bold tracking-wide"
+                        >
+                          <Radio size={16} />
+                          RADIO MIX
                         </button>
                       </div>
                     </motion.div>
@@ -224,7 +251,6 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* The Liquid Glass Footer */}
         <motion.footer
           initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
           className="liquid-glass w-full rounded-3xl p-6 md:p-10 text-white/70 mt-20"
@@ -244,7 +270,7 @@ export default function App() {
               <div>
                 <h4 className="text-sm uppercase tracking-wider text-white font-medium mb-4">Fitur</h4>
                 <div className="text-xs space-y-2 flex flex-col">
-                  {['Analisis Mood', 'Integrasi iTunes', 'Riwayat Lagu'].map(item => (
+                  {['Analisis Mood', 'Integrasi Spotify', 'Riwayat Lagu'].map(item => (
                     <a key={item} href="#" className="hover:text-white transition-colors">{item}</a>
                   ))}
                 </div>

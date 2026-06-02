@@ -66,9 +66,14 @@ const VIBE_CONFIG = {
 };
 
 export default function App() {
-  const [currentVibe, setCurrentVibe] = useState(VIBE_CONFIG.chill);
+  const [currentVibe, setCurrentVibe] = useState(() => {
+    const keys = Object.keys(VIBE_CONFIG);
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    return VIBE_CONFIG[randomKey];
+  });
   const [isChangingVibe, setIsChangingVibe] = useState(false);
   const [showVibeMenu, setShowVibeMenu] = useState(false);
+  const [isStarted, setIsStarted] = useState(false);
 
   const [moodText, setMoodText] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -80,15 +85,22 @@ export default function App() {
   const menuRef = useRef(null);
   const bgVideoRef = useRef(null);
 
-  // 1. Klik di luar menu untuk menutup
+// 4. Autoplay Attempt (Pancingan Audio)
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowVibeMenu(false);
+    const tryAutoPlay = async () => {
+      try {
+        if (audioRef.current) {
+          await audioRef.current.play();
+          setIsPlaying(true);
+        }
+      } catch (error) {
+        console.log("Autoplay diblokir oleh browser, menunggu interaksi user.");
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    
+    // Memberi sedikit jeda agar semua komponen siap
+    const timer = setTimeout(tryAutoPlay, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   // 2. Video Scrubbing Logic
@@ -200,6 +212,7 @@ export default function App() {
   };
 
   return (
+    
     <main className="relative bg-[#001721] w-full min-h-[100svh] overflow-x-hidden flex flex-col font-sans">
       <audio ref={audioRef} src={currentVibe.audio} loop />
 

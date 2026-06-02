@@ -76,7 +76,8 @@ export default function App() {
   const [isStarted, setIsStarted] = useState(false);
 
   const [moodText, setMoodText] = useState('');
-  const [isPlaying, setIsPlaying] = useState(false);
+  // UBAH DEFAULT ISPLAYING JADI TRUE
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [apiData, setApiData] = useState({ pesan: "", keyword: "", songs: [] });
@@ -95,6 +96,8 @@ export default function App() {
         }
       } catch (error) {
         console.log("Autoplay diblokir oleh browser, menunggu interaksi user.");
+        // Jika gagal karena browser block, ikon kembali ke state mute
+        setIsPlaying(false);
       }
     };
     
@@ -214,7 +217,8 @@ export default function App() {
   return (
     
     <main className="relative bg-[#001721] w-full min-h-[100svh] overflow-x-hidden flex flex-col font-sans">
-      <audio ref={audioRef} src={currentVibe.audio} loop />
+      {/* TAMBAHKAN AUTOPLAY DI SINI */}
+      <audio ref={audioRef} src={currentVibe.audio} loop autoPlay />
 
       {/* --- LAYER LOADING --- */}
       <AnimatePresence>

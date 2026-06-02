@@ -73,9 +73,11 @@ export default function App() {
   });
   const [isChangingVibe, setIsChangingVibe] = useState(false);
   const [showVibeMenu, setShowVibeMenu] = useState(false);
+  
+  // STATE BARU UNTUK POPUP
+  const [showDailyPopup, setShowDailyPopup] = useState(false);
 
   const [moodText, setMoodText] = useState('');
-  // Default langsung ON
   const [isPlaying, setIsPlaying] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -85,45 +87,26 @@ export default function App() {
   const menuRef = useRef(null);
   const bgVideoRef = useRef(null);
 
-  // TRIK PAKSAAN AUTOPLAY (BRUTE FORCE)
+  // 4. Logika Cek Kunjungan Harian (Popup 1x Sehari)
   useEffect(() => {
-    const forcePlayAudio = async () => {
-      if (audioRef.current) {
-        try {
-          // Paksa jalanin audionya
-          await audioRef.current.play();
-          setIsPlaying(true);
-        } catch (error) {
-          console.log("Chrome nge-blokir. Menyiapkan jebakan klik...");
-          // Kalau diblokir, pasang jebakan: begitu user klik DI MANA SAJA di layar, lagu akan langsung bunyi!
-          const playOnClick = () => {
-            audioRef.current?.play();
-            setIsPlaying(true);
-            // Cabut jebakan setelah sukses
-            window.removeEventListener('click', playOnClick);
-            window.removeEventListener('touchstart', playOnClick);
-          };
-          window.addEventListener('click', playOnClick);
-          window.addEventListener('touchstart', playOnClick);
-        }
-      }
-    };
-    
-    forcePlayAudio();
-  }, [currentVibe]);
+    const today = new Date().toDateString();
+    const lastVisit = localStorage.getItem('musichealt_last_visit');
 
-  // Klik di luar menu untuk menutup
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowVibeMenu(false);
+    if (lastVisit !== today) {
+      // Jika belum pernah berkunjung hari ini, tampilkan popup dan tahan musik
+      setShowDailyPopup(true);
+      setIsPlaying(false);
+    } else {
+      // Jika sudah pernah berkunjung hari ini, coba langsung mainkan musik
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {
+          console.log("Autoplay ditahan browser sampai user klik layar.");
+        });
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
   }, []);
 
-  // Video Scrubbing Logic
+  // 2. Video Scrubbing Logic
   useEffect(() => {
     const video = bgVideoRef.current;
     if (!video || isChangingVibe) return;
@@ -164,12 +147,12 @@ export default function App() {
     } else {
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch((error) => console.log("Video diblokir:", error));
+        playPromise.catch((error) => console.log("Autoplay diblokir browser:", error));
       }
     }
   }, [currentVibe.id, isChangingVibe]); 
 
-  // Handle Vibe Change
+  // 3. Handle Vibe Change
   const handleVibeChange = (vibeKey) => {
     if (vibeKey === currentVibe.id) return;
     
@@ -180,6 +163,12 @@ export default function App() {
     
     setTimeout(() => {
       setCurrentVibe(VIBE_CONFIG[vibeKey]);
+      
+      if (isPlaying && audioRef.current) {
+        setTimeout(() => {
+          audioRef.current.play().catch(e => console.log("Audio diblokir:", e));
+        }, 150);
+      }
       setIsChangingVibe(false);
     }, 800); 
   };
@@ -188,7 +177,7 @@ export default function App() {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play().catch((err) => console.log("Gagal diputar", err));
+      audioRef.current.play().catch((err) => console.log("Autoplay diblokir", err));
     }
     setIsPlaying(!isPlaying);
   };
@@ -227,8 +216,44 @@ export default function App() {
 
   return (
     <main className="relative bg-[#001721] w-full min-h-[100svh] overflow-x-hidden flex flex-col font-sans">
-      {/* KITA PAKSA MENGGUNAKAN AUTOPLAY DI SINI */}
-      <audio ref={audioRef} src={currentVibe.audio} loop autoPlay />
+      <audio ref={audioRef} src={currentVibe.audio} loop />
+
+      {/* --- POPUP HARIAN (MUNcUL 1X SEHARI) --- */}
+      <AnimatePresence>
+        {showDailyPopup && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999999] flex items-center justify-center bg-[#001721]/90 backdrop-blur-xl px-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+              className="liquid-glass max-w-lg w-full p-8 md:p-12 rounded-3xl text-center border border-white/10 shadow-2xl"
+            >
+              <Sparkles className="w-12 h-12 text-white/80 mx-auto mb-6" />
+              <h2 className="text-3xl md:text-4xl text-white mb-4 tracking-tight" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                Harmoni untuk Pikiranmu
+              </h2>
+              <p className="text-white/70 text-sm md:text-base font-body mb-8 leading-relaxed">
+                Jaga kesehatan mentalmu. Temukan rekomendasi musik yang mengerti perasaanmu saat ini. Aktifkan pengalaman audio untuk perjalanan yang maksimal.
+              </p>
+              <button 
+                onClick={() => {
+                  // Simpan tanggal hari ini di browser agar besok baru muncul lagi
+                  localStorage.setItem('musichealt_last_visit', new Date().toDateString());
+                  setShowDailyPopup(false);
+                  setIsPlaying(true);
+                  if (audioRef.current) {
+                    audioRef.current.play().catch(e => console.log(e));
+                  }
+                }}
+                className="w-full py-4 bg-white text-[#001721] rounded-xl font-bold text-xs sm:text-sm tracking-widest uppercase hover:bg-white/90 transition-all shadow-lg shadow-white/10"
+              >
+                Lanjutkan Perjalanan
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* --- LAYER LOADING --- */}
       <AnimatePresence>

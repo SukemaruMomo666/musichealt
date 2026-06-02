@@ -73,10 +73,9 @@ export default function App() {
   });
   const [isChangingVibe, setIsChangingVibe] = useState(false);
   const [showVibeMenu, setShowVibeMenu] = useState(false);
-  const [isStarted, setIsStarted] = useState(false);
 
   const [moodText, setMoodText] = useState('');
-  // UBAH DEFAULT ISPLAYING JADI TRUE
+  // Default langsung ON
   const [isPlaying, setIsPlaying] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -86,27 +85,45 @@ export default function App() {
   const menuRef = useRef(null);
   const bgVideoRef = useRef(null);
 
-// 4. Autoplay Attempt (Pancingan Audio)
+  // TRIK PAKSAAN AUTOPLAY (BRUTE FORCE)
   useEffect(() => {
-    const tryAutoPlay = async () => {
-      try {
-        if (audioRef.current) {
+    const forcePlayAudio = async () => {
+      if (audioRef.current) {
+        try {
+          // Paksa jalanin audionya
           await audioRef.current.play();
           setIsPlaying(true);
+        } catch (error) {
+          console.log("Chrome nge-blokir. Menyiapkan jebakan klik...");
+          // Kalau diblokir, pasang jebakan: begitu user klik DI MANA SAJA di layar, lagu akan langsung bunyi!
+          const playOnClick = () => {
+            audioRef.current?.play();
+            setIsPlaying(true);
+            // Cabut jebakan setelah sukses
+            window.removeEventListener('click', playOnClick);
+            window.removeEventListener('touchstart', playOnClick);
+          };
+          window.addEventListener('click', playOnClick);
+          window.addEventListener('touchstart', playOnClick);
         }
-      } catch (error) {
-        console.log("Autoplay diblokir oleh browser, menunggu interaksi user.");
-        // Jika gagal karena browser block, ikon kembali ke state mute
-        setIsPlaying(false);
       }
     };
     
-    // Memberi sedikit jeda agar semua komponen siap
-    const timer = setTimeout(tryAutoPlay, 1000);
-    return () => clearTimeout(timer);
+    forcePlayAudio();
+  }, [currentVibe]);
+
+  // Klik di luar menu untuk menutup
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowVibeMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 2. Video Scrubbing Logic
+  // Video Scrubbing Logic
   useEffect(() => {
     const video = bgVideoRef.current;
     if (!video || isChangingVibe) return;
@@ -147,12 +164,12 @@ export default function App() {
     } else {
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch((error) => console.log("Autoplay diblokir browser:", error));
+        playPromise.catch((error) => console.log("Video diblokir:", error));
       }
     }
   }, [currentVibe.id, isChangingVibe]); 
 
-  // 3. Handle Vibe Change
+  // Handle Vibe Change
   const handleVibeChange = (vibeKey) => {
     if (vibeKey === currentVibe.id) return;
     
@@ -163,12 +180,6 @@ export default function App() {
     
     setTimeout(() => {
       setCurrentVibe(VIBE_CONFIG[vibeKey]);
-      
-      if (isPlaying && audioRef.current) {
-        setTimeout(() => {
-          audioRef.current.play().catch(e => console.log("Audio diblokir:", e));
-        }, 150);
-      }
       setIsChangingVibe(false);
     }, 800); 
   };
@@ -177,7 +188,7 @@ export default function App() {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play().catch((err) => console.log("Autoplay diblokir", err));
+      audioRef.current.play().catch((err) => console.log("Gagal diputar", err));
     }
     setIsPlaying(!isPlaying);
   };
@@ -215,9 +226,8 @@ export default function App() {
   };
 
   return (
-    
     <main className="relative bg-[#001721] w-full min-h-[100svh] overflow-x-hidden flex flex-col font-sans">
-      {/* TAMBAHKAN AUTOPLAY DI SINI */}
+      {/* KITA PAKSA MENGGUNAKAN AUTOPLAY DI SINI */}
       <audio ref={audioRef} src={currentVibe.audio} loop autoPlay />
 
       {/* --- LAYER LOADING --- */}
@@ -288,7 +298,7 @@ export default function App() {
                     animate={{ opacity: 1, y: 0, scale: 1 }} 
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-[10px]-calc(100%+8px)] w-[180px] sm:w-[220px] p-2 rounded-xl sm:rounded-2xl liquid-glass border border-white/10 flex flex-col gap-1 shadow-2xl origin-top"
+                    className="absolute top-[calc(100%+8px)] w-[180px] sm:w-[220px] p-2 rounded-xl sm:rounded-2xl liquid-glass border border-white/10 flex flex-col gap-1 shadow-2xl origin-top"
                   >
                     {Object.values(VIBE_CONFIG).map((vibe) => (
                       <button 

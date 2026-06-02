@@ -323,7 +323,7 @@ export default function App() {
                     animate={{ opacity: 1, y: 0, scale: 1 }} 
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-[calc(100%+8px)] w-[180px] sm:w-[220px] p-2 rounded-xl sm:rounded-2xl liquid-glass border border-white/10 flex flex-col gap-1 shadow-2xl origin-top"
+                    className="absolute top-[5px[ calc(100%+8px)] w-[180px] sm:w-[220px] p-2 rounded-xl sm:rounded-2xl liquid-glass border border-white/10 flex flex-col gap-1 shadow-2xl origin-top"
                   >
                     {Object.values(VIBE_CONFIG).map((vibe) => (
                       <button 
